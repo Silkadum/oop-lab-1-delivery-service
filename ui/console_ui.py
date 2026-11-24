@@ -14,10 +14,10 @@ class ConsoleUI:
     """
 
     def __init__(self, service: OrderService, warehouse: Warehouse) -> None:
-        self._service = service
-        self._warehouse = warehouse
+        self.__service = service
+        self.__warehouse = warehouse
         # Пункт меню -> (текст, метод-обработчик)
-        self._menu = {
+        self.__menu = {
             "1": ("Создать заказ", self._create_order),
             "2": ("Показать все заказы", self._show_orders),
             "3": ("Изменить корзину заказа", self._edit_cart),
@@ -40,21 +40,24 @@ class ConsoleUI:
         """Главный цикл: работает, пока пользователь не выберет выход."""
         while True:
             print("\n===== Служба доставки =====")
-            for key, (title, _) in self._menu.items():
+            for key, (title, _) in self.__menu.items():
                 print(f"{key}. {title}")
             print("0. Выход")
             choice = input("Выберите пункт: ").strip()
-            if choice == "0":
-                print("Работа завершена.")
-                break
-            if choice not in self._menu:
-                print("Такого пункта нет, попробуйте ещё раз.")
-                continue
-            _, action = self._menu[choice]
-            try:
-                action()
-            except ValueError as error:
-                print(f"Ошибка: {error}")
+            match choice:
+                case "0":
+                    print("Работа завершена.")
+                    break
+                case _ if choice in self.__menu:
+                    _, action = self.__menu[choice]
+                    try:
+                        action()
+                    except ValueError as error:
+                        print(f"Ошибка: {error}")
+                    # Пауза, чтобы результат не уехал вверх при выводе меню
+                    input("\nНажмите Enter, чтобы вернуться в меню...")
+                case _:
+                    print("Такого пункта нет, попробуйте ещё раз.")
 
     # ----- Пункты меню -----
 
@@ -62,7 +65,7 @@ class ConsoleUI:
         name = self._read_text("Имя клиента: ")
         phone = self._read_text("Телефон клиента: ")
         address = self._read_text("Адрес доставки: ")
-        order = self._service.create_order(name, phone, address)
+        order = self.__service.create_order(name, phone, address)
         print(f"Создан заказ №{order.order_id}. Добавьте товары.")
         self._fill_cart(order)
         if not order.items:
@@ -70,7 +73,7 @@ class ConsoleUI:
         self._print_order(order)
 
     def _show_orders(self) -> None:
-        orders = self._service.get_orders()
+        orders = self.__service.get_orders()
         if not orders:
             print("Заказов пока нет.")
             return
@@ -92,7 +95,7 @@ class ConsoleUI:
                     self._fill_cart(order)
                 elif choice == "2":
                     name = self._read_text("Название товара для удаления: ")
-                    self._service.remove_item(order.order_id, name)
+                    self.__service.remove_item(order.order_id, name)
                     print("Позиция удалена.")
                 else:
                     print("Такого действия нет.")
@@ -101,7 +104,7 @@ class ConsoleUI:
 
     def _choose_delivery(self) -> None:
         order = self._ask_order()
-        methods = self._service.get_delivery_methods()
+        methods = self.__service.get_delivery_methods()
         items_cost = order.items_cost()
         print("Способы доставки для этого заказа:")
         for number, method in enumerate(methods, start=1):
@@ -114,7 +117,7 @@ class ConsoleUI:
         if index is None:
             return
         method = methods[index]
-        self._service.set_delivery_method(order.order_id, method)
+        self.__service.set_delivery_method(order.order_id, method)
         print(
             f"Выбрано: {method.name}. Стоимость доставки "
             f"{order.delivery_cost():.2f} руб., срок — {method.estimate_time()}."
@@ -123,7 +126,7 @@ class ConsoleUI:
 
     def _assign_courier(self) -> None:
         order = self._ask_order()
-        couriers = self._service.get_free_couriers()
+        couriers = self.__service.get_free_couriers()
         if not couriers:
             print("Свободных курьеров нет.")
             return
@@ -134,28 +137,28 @@ class ConsoleUI:
         if index is None:
             return
         courier = couriers[index]
-        self._service.assign_courier(order.order_id, courier.courier_id)
+        self.__service.assign_courier(order.order_id, courier.courier_id)
         print(f"Курьер {courier.name} назначен на заказ №{order.order_id}.")
 
     def _change_status(self) -> None:
         order = self._ask_order()
         statuses = order.allowed_statuses()
-        print(f"Текущий статус: {order.status.value}")
+        print(f"Текущий статус: {order.status}")
         if not statuses:
             print("Заказ завершён, статус больше не меняется.")
             return
         for number, status in enumerate(statuses, start=1):
-            print(f"{number}. {status.value}")
+            print(f"{number}. {status}")
         index = self._read_choice("Новый статус (0 — отмена): ", len(statuses))
         if index is None:
             return
-        self._service.change_status(order.order_id, statuses[index])
+        self.__service.change_status(order.order_id, statuses[index])
         print("Статус изменён.")
         self._print_order(order)
 
     def _show_stock(self) -> None:
-        print(f"Склад (адрес самовывоза: {self._warehouse.address}):")
-        stock = self._warehouse.get_stock()
+        print(f"Склад (адрес самовывоза: {self.__warehouse.address}):")
+        stock = self.__warehouse.get_stock()
         if not stock:
             print("  склад пуст")
             return
@@ -165,21 +168,21 @@ class ConsoleUI:
     def _add_to_stock(self) -> None:
         self._show_stock()
         name = self._read_text("Название товара: ")
-        if self._warehouse.has_product(name):
+        if self.__warehouse.has_product(name):
             quantity = self._read_int("Сколько добавить: ")
-            self._warehouse.restock(name, quantity)
+            self.__warehouse.restock(name, quantity)
             print("Остаток пополнен.")
         else:
             price = self._read_float("Цена за единицу: ")
             quantity = self._read_int("Количество: ")
-            self._warehouse.add_product(name, price, quantity)
+            self.__warehouse.add_product(name, price, quantity)
             print("Товар добавлен на склад.")
 
     def _remove_from_stock(self) -> None:
         self._show_stock()
         name = self._read_text("Название товара: ")
         quantity = self._read_int("Сколько убрать: ")
-        self._warehouse.remove(name, quantity)
+        self.__warehouse.remove(name, quantity)
         print("Товар убран со склада.")
 
     # ----- Вспомогательные методы -----
@@ -193,21 +196,21 @@ class ConsoleUI:
                 return
             quantity = self._read_int("Количество: ")
             try:
-                self._service.add_item(order.order_id, name, quantity)
+                self.__service.add_item(order.order_id, name, quantity)
                 print("Товар добавлен в корзину.")
             except ValueError as error:
                 print(f"Ошибка: {error}")
 
     def _ask_order(self) -> Order:
         order_id = self._read_int("Номер заказа: ")
-        return self._service.find_order(order_id)
+        return self.__service.find_order(order_id)
 
     def _print_order(self, order: Order) -> None:
         method = order.delivery_method
-        print(f"\n--- Заказ №{order.order_id} [{order.status.value}] ---")
+        print(f"\n--- Заказ №{order.order_id} [{order.status}] ---")
         print(f"Клиент: {order.customer.name}, {order.customer.phone}")
         if method is not None and not method.requires_courier:
-            print(f"Пункт выдачи: склад, {self._warehouse.address}")
+            print(f"Пункт выдачи: склад, {self.__warehouse.address}")
         else:
             print(f"Адрес доставки: {order.address}")
         print("Позиции:")
