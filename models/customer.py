@@ -11,13 +11,13 @@ class Customer:
             raise ValueError("Имя клиента не может быть пустым")
         if not phone:
             raise ValueError("Телефон клиента не может быть пустым")
-        self._name = name
-        self._phone = phone
+        self.__name = name
+        self.__phone = phone
 
     @property
     def name(self) -> str:
-        return self._name
+        return self.__name
 
     @property
     def phone(self) -> str:
-        return self._phone
+        return self.__phone

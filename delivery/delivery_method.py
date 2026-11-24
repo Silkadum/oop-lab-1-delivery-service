@@ -6,19 +6,13 @@ from abc import ABC, abstractmethod
 class DeliveryMethod(ABC):
     """Абстрактный способ доставки.
 
-    Каждый наследник по-своему считает стоимость и срок, поэтому
-    заказу не нужно проверять, какой именно способ выбран.
+    Каждый наследник задаёт атрибуты name и requires_courier
+    и по-своему считает стоимость и срок, поэтому заказу не нужно
+    проверять, какой именно способ выбран.
     """
 
-    @property
-    @abstractmethod
-    def name(self) -> str:
-        """Название способа доставки для пользователя."""
-
-    @property
-    def requires_courier(self) -> bool:
-        """Нужен ли курьер. По умолчанию нужен, самовывоз переопределяет."""
-        return True
+    name: str                 # название способа для пользователя
+    requires_courier: bool    # нужен ли курьер
 
     @abstractmethod
     def calculate_cost(self, items_cost: float) -> float:

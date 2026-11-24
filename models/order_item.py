@@ -16,28 +16,28 @@ class OrderItem:
             raise ValueError("Количество должно быть больше нуля")
         if price <= 0:
             raise ValueError("Цена должна быть больше нуля")
-        self._name = name
-        self._quantity = quantity
-        self._price = price
+        self.__name = name
+        self.__quantity = quantity
+        self.__price = price
 
     @property
     def name(self) -> str:
-        return self._name
+        return self.__name
 
     @property
     def quantity(self) -> int:
-        return self._quantity
+        return self.__quantity
 
     @property
     def price(self) -> float:
-        return self._price
+        return self.__price
 
     def add_quantity(self, quantity: int) -> None:
         """Увеличивает количество, если тот же товар добавили повторно."""
         if quantity <= 0:
             raise ValueError("Количество должно быть больше нуля")
-        self._quantity += quantity
+        self.__quantity += quantity
 
     def total(self) -> float:
         """Возвращает стоимость позиции: количество × цена."""
-        return self._quantity * self._price
+        return self.__quantity * self.__price

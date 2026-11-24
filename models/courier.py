@@ -16,33 +16,33 @@ class Courier:
             raise ValueError("Имя курьера не может быть пустым")
         if not phone:
             raise ValueError("Телефон курьера не может быть пустым")
-        self._courier_id = courier_id
-        self._name = name
-        self._phone = phone
-        self._is_free = True
+        self.__courier_id = courier_id
+        self.__name = name
+        self.__phone = phone
+        self.__is_free = True
 
     @property
     def courier_id(self) -> int:
-        return self._courier_id
+        return self.__courier_id
 
     @property
     def name(self) -> str:
-        return self._name
+        return self.__name
 
     @property
     def phone(self) -> str:
-        return self._phone
+        return self.__phone
 
     @property
     def is_free(self) -> bool:
-        return self._is_free
+        return self.__is_free
 
     def take_order(self) -> None:
         """Отмечает курьера занятым. Занятого курьера назначить нельзя."""
-        if not self._is_free:
-            raise ValueError(f"Курьер {self._name} уже занят другим заказом")
-        self._is_free = False
+        if not self.__is_free:
+            raise ValueError(f"Курьер {self.__name} уже занят другим заказом")
+        self.__is_free = False
 
     def release(self) -> None:
         """Освобождает курьера после завершения или отмены заказа."""
-        self._is_free = True
+        self.__is_free = True

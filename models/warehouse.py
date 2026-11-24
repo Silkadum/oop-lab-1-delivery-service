@@ -14,34 +14,28 @@ class Warehouse:
         address = address.strip()
         if not address:
             raise ValueError("Адрес склада не может быть пустым")
-        self._address = address
-        # Ключ словарей — название товара в нижнем регистре
-        self._products: dict[str, Product] = {}
-        self._quantities: dict[str, int] = {}
+        self.__address = address
+        # Ключ — название товара в нижнем регистре, значение — (товар, остаток)
+        self.__stock: dict[str, tuple[Product, int]] = {}
 
     @property
     def address(self) -> str:
-        return self._address
+        return self.__address
 
     def has_product(self, name: str) -> bool:
-        return self._key(name) in self._products
+        return self._key(name) in self.__stock
 
     def find_product(self, name: str) -> Product:
-        key = self._key(name)
-        if key not in self._products:
-            raise ValueError(f"Товара «{name.strip()}» нет на складе")
-        return self._products[key]
+        product, _ = self._get_entry(name)
+        return product
 
     def get_quantity(self, name: str) -> int:
-        self.find_product(name)
-        return self._quantities[self._key(name)]
+        _, quantity = self._get_entry(name)
+        return quantity
 
     def get_stock(self) -> list[tuple[Product, int]]:
         """Возвращает пары (товар, остаток) для вывода на экран."""
-        return [
-            (product, self._quantities[key])
-            for key, product in self._products.items()
-        ]
+        return list(self.__stock.values())
 
     def add_product(self, name: str, price: float, quantity: int) -> None:
         """Заводит на склад новый товар."""
@@ -49,30 +43,27 @@ class Warehouse:
             raise ValueError(f"Товар «{name.strip()}» уже есть, пополните остаток")
         if quantity <= 0:
             raise ValueError("Количество должно быть больше нуля")
-        product = Product(name, price)
-        key = self._key(name)
-        self._products[key] = product
-        self._quantities[key] = quantity
+        self.__stock[self._key(name)] = (Product(name, price), quantity)
 
     def restock(self, name: str, quantity: int) -> None:
         """Пополняет остаток существующего товара."""
-        self.find_product(name)
+        product, available = self._get_entry(name)
         if quantity <= 0:
             raise ValueError("Количество должно быть больше нуля")
-        self._quantities[self._key(name)] += quantity
+        self.__stock[self._key(name)] = (product, available + quantity)
 
     def remove(self, name: str, quantity: int) -> None:
         """Убирает товар со склада. Если остаток стал нулевым, товар удаляется."""
-        available = self.get_quantity(name)
+        product, available = self._get_entry(name)
         if quantity <= 0:
             raise ValueError("Количество должно быть больше нуля")
         if quantity > available:
             raise ValueError(f"На складе только {available} шт.")
         key = self._key(name)
-        self._quantities[key] -= quantity
-        if self._quantities[key] == 0:
-            del self._products[key]
-            del self._quantities[key]
+        if quantity == available:
+            del self.__stock[key]
+        else:
+            self.__stock[key] = (product, available - quantity)
 
     def take_items(self, items: tuple[OrderItem, ...]) -> None:
         """Списывает позиции заказа. Либо списывается всё, либо ничего."""
@@ -97,6 +88,15 @@ class Warehouse:
             else:
                 # Товар успели удалить со склада — заводим его заново
                 self.add_product(item.name, item.price, item.quantity)
+
+    # ----- Вспомогательные методы -----
+
+    def _get_entry(self, name: str) -> tuple[Product, int]:
+        """Возвращает пару (товар, остаток) или ValueError, если товара нет."""
+        key = self._key(name)
+        if key not in self.__stock:
+            raise ValueError(f"Товара «{name.strip()}» нет на складе")
+        return self.__stock[key]
 
     @staticmethod
     def _key(name: str) -> str:
